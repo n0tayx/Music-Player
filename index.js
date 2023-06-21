@@ -1,77 +1,108 @@
-const container = document.querySelector('.container');
-const search = document.querySelector('.search-box button');
-const weatherBox = document.querySelector('.weather-box');
-const weatherDetails = document.querySelector('.weather-details');
-const error404 = document.querySelector('.not-found');
+const image = document.getElementById('cover'),
+    title = document.getElementById('music-title'),
+    artist = document.getElementById('music-artist'),
+    currentTimeEl = document.getElementById('current-time'),
+    durationEl = document.getElementById('duration'),
+    progress = document.getElementById('progress'),
+    playerProgress = document.getElementById('player-progress'),
+    prevBtn = document.getElementById('prev'),
+    nextBtn = document.getElementById('next'),
+    playBtn = document.getElementById('play'),
+    background = document.getElementById('bg-img');
 
-search.addEventListener('click', () => {
+const music = new Audio();
 
-    const APIKey = 'bdaa05be008712f10f5c09e642d5fe6a';
-    const city = document.querySelector('.search-box input').value;
+const songs = [
+    {
+        path: 'assets/1.mp3',
+        displayName: 'Murder on My Mind',
+        cover: 'assets/1.jpg',
+        artist: 'YNW Melly',
+    },
+    {
+        path: 'assets/2.mp3',
+        displayName: 'Mama Cry',
+        cover: 'assets/2.jpg',
+        artist: 'YNW Melly',
+    },
+    {
+        path: 'assets/3.mp3',
+        displayName: 'Congratulations',
+        cover: 'assets/3.jpg',
+        artist: 'Post Malone',
+    },
+    {
+        path: 'assets/4.mp3',
+        displayName: 'SAD',
+        cover: 'assets/4.jpg',
+        artist: 'XXXTENTACION',
+    }
+];
 
-    if (city === '')
-        return;
+let musicIndex = 0;
+let isPlaying = false;
 
-    fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${APIKey}`)
-        .then(response => response.json())
-        .then(json => {
+function togglePlay() {
+    if (isPlaying) {
+        pauseMusic();
+    } else {
+        playMusic();
+    }
+}
 
-            if (json.cod === '404') {
-                container.style.height = '400px';
-                weatherBox.style.display = 'none';
-                weatherDetails.style.display = 'none';
-                error404.style.display = 'block';
-                error404.classList.add('fadeIn');
-                return;
-            }
+function playMusic() {
+    isPlaying = true;
+    // Change play button icon
+    playBtn.classList.replace('fa-play', 'fa-pause');
+    // Set button hover title
+    playBtn.setAttribute('title', 'Pause');
+    music.play();
+}
 
-            error404.style.display = 'none';
-            error404.classList.remove('fadeIn');
+function pauseMusic() {
+    isPlaying = false;
+    // Change pause button icon
+    playBtn.classList.replace('fa-pause', 'fa-play');
+    // Set button hover title
+    playBtn.setAttribute('title', 'Play');
+    music.pause();
+}
 
-            const image = document.querySelector('.weather-box img');
-            const temperature = document.querySelector('.weather-box .temperature');
-            const description = document.querySelector('.weather-box .description');
-            const humidity = document.querySelector('.weather-details .humidity span');
-            const wind = document.querySelector('.weather-details .wind span');
+function loadMusic(song) {
+    music.src = song.path;
+    title.textContent = song.displayName;
+    artist.textContent = song.artist;
+    image.src = song.cover;
+    background.src = song.cover;
+}
 
-            switch (json.weather[0].main) {
-                case 'Clear':
-                    image.src = 'images/clear.png';
-                    break;
+function changeMusic(direction) {
+    musicIndex = (musicIndex + direction + songs.length) % songs.length;
+    loadMusic(songs[musicIndex]);
+    playMusic();
+}
 
-                case 'Rain':
-                    image.src = 'images/rain.png';
-                    break;
+function updateProgressBar() {
+    const { duration, currentTime } = music;
+    const progressPercent = (currentTime / duration) * 100;
+    progress.style.width = `${progressPercent}%`;
 
-                case 'Snow':
-                    image.src = 'images/snow.png';
-                    break;
+    const formatTime = (time) => String(Math.floor(time)).padStart(2, '0');
+    durationEl.textContent = `${formatTime(duration / 60)}:${formatTime(duration % 60)}`;
+    currentTimeEl.textContent = `${formatTime(currentTime / 60)}:${formatTime(currentTime % 60)}`;
+}
 
-                case 'Clouds':
-                    image.src = 'images/cloud.png';
-                    break;
+function setProgressBar(e) {
+    const width = playerProgress.clientWidth;
+    const clickX = e.offsetX;
+    music.currentTime = (clickX / width) * music.duration;
+}
 
-                case 'Haze':
-                    image.src = 'images/mist.png';
-                    break;
+playBtn.addEventListener('click', togglePlay);
+prevBtn.addEventListener('click', () => changeMusic(-1));
+nextBtn.addEventListener('click', () => changeMusic(1));
+music.addEventListener('ended', () => changeMusic(1));
+music.addEventListener('timeupdate', updateProgressBar);
+playerProgress.addEventListener('click', setProgressBar);
 
-                default:
-                    image.src = '';
-            }
-
-            temperature.innerHTML = `${parseInt(json.main.temp)}<span>°C</span>`;
-            description.innerHTML = `${json.weather[0].description}`;
-            humidity.innerHTML = `${json.main.humidity}%`;
-            wind.innerHTML = `${parseInt(json.wind.speed)}Km/h`;
-
-            weatherBox.style.display = '';
-            weatherDetails.style.display = '';
-            weatherBox.classList.add('fadeIn');
-            weatherDetails.classList.add('fadeIn');
-            container.style.height = '590px';
-
-
-        });
-
-
-});
+loadMusic(songs[musicIndex]);
